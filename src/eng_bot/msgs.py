@@ -1,4 +1,4 @@
-import db.users, db.topics, db.tests, db.articles
+import db.users, db.topics, db.tests, db.articles, db.questions
 
 
 
@@ -51,7 +51,6 @@ def get_articles(topic_id):
     msg = f'Список статей для топика {topic_name}:\n\n'
     msg += '\n'.join([f"{idx+1}  →  {article['name']}" for idx, article in enumerate(articles)])
     return msg
-    
 
 
 def admin_msg_handler(message):
@@ -60,3 +59,20 @@ def admin_msg_handler(message):
         db.users.set_action(user_id, 'back_to_main')
     elif message.text.startswith('Топики'):
         db.users.set_action(user_id, 'edit_topic')
+        
+def get_test_stats(user_id, test_id):
+    test = db.tests.get_test(test_id)
+    test_by = db.users.get_user(test["user_id"])
+    
+    highest_score = db.tests.get_highest_score(user_id, test_id)
+    questions = db.questions.get_questions(test_id)
+    questions_amount = len(questions)
+    questions_price = sum([question["price"] for question in questions])
+    
+    msg = f"{test['name']}:\n"
+    msg += "Создатель теста: Аноним\n\n" if test_by["last_name"] is None or test_by["first_name"] is None \
+                                else f"Создатель теста: {test_by['last_name']} {test_by['first_name']}\n\n"
+    msg += f"Количество вопросов: {questions_amount}\n"
+
+    msg += "Вы ранее не проходили этот тест!" if highest_score is None else f"Ваш лучший результат: {highest_score}/{questions_price}"
+    return msg

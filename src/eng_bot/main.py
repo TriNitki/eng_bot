@@ -1,7 +1,7 @@
 import telebot
 
 from config import bot_token
-import db.users, db.topics, db.tests, db.articles, db.questions
+import db.users, db.topics, db.tests, db.articles, db.questions, db.answers
 import markups
 import models
 import msgs
@@ -54,6 +54,21 @@ def view_topics(message):
     bot.send_message(message.chat.id, msg, reply_markup=markups.get_inline_keyboard('student_topic_list'))
 
 
+def pass_test_handler(message, test_id):
+    test_data = db.tests.get_test(test_id)
+    Test = models.Test(test_data["name"])
+    
+    questions = db.questions.get_questions(test_id)
+    for question in questions:
+        Question = models.Question(question["content"], question["type"], question["price"])
+        answers = db.answers.get_answers(question["id"])
+        for answer in answers:
+            Answer = models.Answer(answer["content"], answer["correctness"])
+            Question.add_answer(Answer)
+        Test.add_question(Question)
+    
+
+
 @bot.callback_query_handler(func=lambda call: call.data.startswith('student_topics_'))
 def student_topics_callback_worker(call):
     user_id = call.message.chat.id
@@ -103,8 +118,20 @@ def student_tests_callback_worker(call):
         msg = msgs.get_topics()
         bot.edit_message_text(chat_id=user_id, message_id=message_id, text=msg, reply_markup=markups.get_inline_keyboard('student_topic_list'))
     else:
-        db.users.set_selection(user_id, test_id)
+        db.users.set_action(user_id, 'start_test')
+        
+        msg = msgs.get_test_stats(user_id, test_id)
+        bot.edit_message_text(chat_id=user_id, message_id=message_id, text=msg, reply_markup=markups.get_inline_keyboard('start_test', data=test_id))
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('start_test_'))
+def student_start_test_callback_worker(call):
+    user_id = call.message.chat.id
     
+    test_id = '_'.join(call.data.split('_')[2:])
+    pass_test_handler(call.message, test_id)
+        
+
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('student_acrticles_'))
 def student_articles_callback_worker(call):
@@ -151,37 +178,37 @@ def add_test_handler(message):
                 
                 if action == 'add_answer_content':
                     db.users.set_action(user_id, 'add_answer_correctness')
-                    answer.content = message.text
+                    Answer.content = message.text
                     
                     bot.send_message(message.chat.id, 'Добавьте правильность ответа', reply_markup=markups.get_reply_keyboard('true_false', one_time=True))
                     bot.register_next_step_handler(message, add_answer)
                 elif action == 'add_answer_correctness':
                     db.users.set_action(user_id, 'answer_next_step')
-                    answer.correctness = True if message.text.startswith('Верно') else False
+                    Answer.correctness = True if message.text.startswith('Верно') else False
                     
                     bot.send_message(message.chat.id, 'Выберете следующее действие', reply_markup=markups.get_reply_keyboard('answer_next_step', one_time=True))
                     bot.register_next_step_handler(message, add_answer)
                 elif action == 'answer_next_step':
                     if message.text.startswith('Вернуться'):
-                        question.add_answer(answer)
-                        test.add_question(question)
+                        Question.add_answer(Answer)
+                        Test.add_question(Question)
                         
-                        db.tests.add(user_id, topic_id, test)
+                        db.tests.add(user_id, topic_id, Test)
                         edit_topic(message)
                     elif message.text.startswith('Добавить тест'):
-                        question.add_answer(answer)
-                        test.add_question(question)
+                        Question.add_answer(Answer)
+                        Test.add_question(Question)
                         
-                        db.tests.add(user_id, topic_id, test)
+                        db.tests.add(user_id, topic_id, Test)
                         add_test_handler(message)
                     elif message.text.startswith('Добавить вопрос'):
-                        question.add_answer(answer)
-                        test.add_question(question)
+                        Question.add_answer(Answer)
+                        Test.add_question(Question)
                         
                         db.users.set_action(user_id, 'add_question_content')
                         add_test(message)
                     elif message.text.startswith('Добавить ответ'):
-                        question.add_answer(answer)
+                        Question.add_answer(Answer)
                         
                         db.users.set_action(user_id, 'add_answer_content')
                         add_question(message)
@@ -190,25 +217,25 @@ def add_test_handler(message):
             action = db.users.get_action(user_id)
             if action == 'add_question_content':
                 db.users.set_action(user_id, 'add_question_type')
-                question.content = message.text
+                Question.content = message.text
                 
                 bot.send_message(message.chat.id, 'Выберете тип вопроса', reply_markup=markups.get_reply_keyboard("question_types", data=question_types, one_time=True))
                 bot.register_next_step_handler(message, add_question)
             elif action == 'add_question_type':
                 db.users.set_action(user_id, 'add_question_price')
-                question.type = list(filter(lambda x: x["name"] == message.text, question_types))[0]["id"]
+                Question.type = list(filter(lambda x: x["name"] == message.text, question_types))[0]["id"]
                 
                 bot.send_message(message.chat.id, 'Введите цену вопроса (для таблицы лидеров)')
                 bot.register_next_step_handler(message, add_question)
             elif action == 'add_question_price':
                 db.users.set_action(user_id, 'add_answer_content')
-                question.price = message.text
-                answer = models.Answer()
+                Question.price = message.text
+                Answer = models.Answer()
                 
                 bot.send_message(message.chat.id, 'Добавьте вариант ответа')
                 bot.register_next_step_handler(message, add_answer)
             elif action == 'add_answer_content':
-                answer = models.Answer()
+                Answer = models.Answer()
                 
                 bot.send_message(message.chat.id, 'Добавьте вариант ответа')
                 bot.register_next_step_handler(message, add_answer)
@@ -220,18 +247,18 @@ def add_test_handler(message):
             bot.register_next_step_handler(message, add_test)
         elif action == 'add_test_name':
             db.users.set_action(user_id, 'add_question_content')
-            test.name = message.text
-            question = models.Question()
+            Test.name = message.text
+            Question = models.Question()
             
             bot.send_message(message.chat.id, 'Введите формулировку вопроса')
             bot.register_next_step_handler(message, add_question)
         elif action == 'add_question_content':
-            question = models.Question()
+            Question = models.Question()
             
             bot.send_message(message.chat.id, 'Введите формулировку вопроса')
             bot.register_next_step_handler(message, add_question)
     
-    test = models.Test()
+    Test = models.Test()
     user_id = message.chat.id
     topic_id = db.users.get_selection(user_id)
     db.users.set_action(user_id, 'add_test')
@@ -275,8 +302,8 @@ def add_article_handler(message):
 
 
 def profile(message):
-    DATA = db.users.get_user(message.chat.id)
-    user = models.User(DATA)
+    user_profile = db.users.get_user(message.chat.id)
+    user = models.User(user_profile)
     msg = msgs.greet_user(user)
     
     bot.send_message(message.chat.id, msg)
