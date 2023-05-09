@@ -1,0 +1,212 @@
+-- Table: public.users
+
+-- DROP TABLE IF EXISTS public.users;
+
+CREATE TABLE IF NOT EXISTS public.users
+(
+    user_id integer NOT NULL,
+    first_name character varying(32) COLLATE pg_catalog."default",
+    last_name character varying(32) COLLATE pg_catalog."default",
+    student_group character varying(16) COLLATE pg_catalog."default",
+    rating integer NOT NULL DEFAULT 0,
+    status character varying(16) COLLATE pg_catalog."default" NOT NULL DEFAULT 'student'::character varying,
+    is_registered boolean NOT NULL DEFAULT 'false',
+    action character varying(16) COLLATE pg_catalog."default",
+    selection integer,
+    CONSTRAINT unique_users_user_id UNIQUE (user_id)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.users
+    OWNER to postgres;
+
+
+
+
+
+-- Table: public.topics
+
+-- DROP TABLE IF EXISTS public.topics;
+
+CREATE TABLE IF NOT EXISTS public.topics
+(
+    topic_id SERIAL NOT NULL,
+    name character varying(64) COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT unique_topics_topic_id UNIQUE (topic_id)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.topics
+    OWNER to postgres;
+
+
+
+
+-- Table: public.articles
+
+-- DROP TABLE IF EXISTS public.articles;
+
+CREATE TABLE IF NOT EXISTS public.articles
+(
+    article_id SERIAL NOT NULL,
+    topic_id integer NOT NULL,
+    name character varying(64) COLLATE pg_catalog."default" NOT NULL,
+    content character varying(128) COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT unique_articles_article_id UNIQUE (article_id),
+    CONSTRAINT lmk_topics_to_articles FOREIGN KEY (topic_id)
+        REFERENCES public.topics (topic_id) MATCH FULL
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.articles
+    OWNER to postgres;
+-- Index: index_topic_id
+
+-- DROP INDEX IF EXISTS public.index_topic_id;
+
+CREATE INDEX IF NOT EXISTS index_topic_id
+    ON public.articles USING btree
+    (topic_id ASC NULLS LAST)
+    TABLESPACE pg_default;
+
+
+
+
+-- Table: public.tests
+
+-- DROP TABLE IF EXISTS public.tests;
+
+CREATE TABLE IF NOT EXISTS public.tests
+(
+    test_id SERIAL NOT NULL,
+    topic_id integer NOT NULL,
+    name character varying(64) COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT unique_tests_test_id UNIQUE (test_id),
+    CONSTRAINT lmk_topics_to_tests FOREIGN KEY (topic_id)
+        REFERENCES public.topics (topic_id) MATCH FULL
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.tests
+    OWNER to postgres;
+-- Index: index_topic_id1
+
+-- DROP INDEX IF EXISTS public.index_topic_id1;
+
+CREATE INDEX IF NOT EXISTS index_topic_id1
+    ON public.tests USING btree
+    (topic_id ASC NULLS LAST)
+    TABLESPACE pg_default;
+
+
+
+
+
+
+-- Table: public.test_results
+
+-- DROP TABLE IF EXISTS public.test_results;
+
+CREATE TABLE IF NOT EXISTS public.test_results
+(
+    test_id integer NOT NULL,
+    user_id integer NOT NULL,
+    max_points integer NOT NULL DEFAULT 0,
+    CONSTRAINT unique_test_results_operation_id UNIQUE (test_id),
+    CONSTRAINT lmk_tests_to_test_results FOREIGN KEY (test_id)
+        REFERENCES public.tests (test_id) MATCH FULL
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+    CONSTRAINT lmk_users_to_test_results FOREIGN KEY (user_id)
+        REFERENCES public.users (user_id) MATCH FULL
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.test_results
+    OWNER to postgres;
+-- Index: index_user_id
+
+-- DROP INDEX IF EXISTS public.index_user_id;
+
+CREATE INDEX IF NOT EXISTS index_user_id
+    ON public.test_results USING btree
+    (user_id ASC NULLS LAST)
+    TABLESPACE pg_default;
+
+
+
+
+-- Table: public.questions
+
+-- DROP TABLE IF EXISTS public.questions;
+
+CREATE TABLE IF NOT EXISTS public.questions
+(
+    question_id SERIAL NOT NULL,
+    content character varying(512) COLLATE pg_catalog."default" NOT NULL,
+    type character varying(8) COLLATE pg_catalog."default" NOT NULL,
+    test_id integer NOT NULL,
+    price integer NOT NULL DEFAULT 0,
+    CONSTRAINT unique_questions_question_id UNIQUE (question_id),
+    CONSTRAINT lmk_tests_to_questions FOREIGN KEY (test_id)
+        REFERENCES public.tests (test_id) MATCH FULL
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.questions
+    OWNER to postgres;
+-- Index: index_test_id
+
+-- DROP INDEX IF EXISTS public.index_test_id;
+
+CREATE INDEX IF NOT EXISTS index_test_id
+    ON public.questions USING btree
+    (test_id ASC NULLS LAST)
+    TABLESPACE pg_default;
+
+
+
+
+-- Table: public.answers
+
+-- DROP TABLE IF EXISTS public.answers;
+
+CREATE TABLE IF NOT EXISTS public.answers
+(
+    answer_id SERIAL NOT NULL,
+    question_id integer NOT NULL,
+    content character varying(64) COLLATE pg_catalog."default" NOT NULL,
+    correctness boolean NOT NULL,
+    CONSTRAINT unique_answers_answer_id UNIQUE (answer_id),
+    CONSTRAINT lmk_questions_toanswers FOREIGN KEY (question_id)
+        REFERENCES public.questions (question_id) MATCH FULL
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.answers
+    OWNER to postgres;
+-- Index: index_question_id
+
+-- DROP INDEX IF EXISTS public.index_question_id;
+
+CREATE INDEX IF NOT EXISTS index_question_id
+    ON public.answers USING btree
+    (question_id ASC NULLS LAST)
+    TABLESPACE pg_default;
