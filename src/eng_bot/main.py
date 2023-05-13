@@ -14,6 +14,7 @@ def start(message):
     bot.send_message(message.chat.id, 'Добро пожаловать в @Mega_EngBot!', reply_markup=markups.get_reply_keyboard('greet'))
     bot.register_next_step_handler(message, greet_handler)
 
+
 @bot.message_handler(commands=['admin'])
 def admin(message):
     user_id = message.chat.id
@@ -25,7 +26,8 @@ def admin(message):
         admin_mode(message)
     else:
         bot.send_message(message.chat.id, 'У вас недостаточно прав!', reply_markup=markups.get_reply_keyboard('main', user_id))
-        
+
+
 @bot.message_handler(content_types=['text'])
 def command_handler(message):
     user_id = message.chat.id
@@ -45,6 +47,7 @@ def command_handler(message):
     elif message.text.startswith('Таблица лидеров'):
         pass
 
+
 def view_topics(message):
     user_id = message.chat.id
     db.users.set_selection(user_id, None)
@@ -55,18 +58,66 @@ def view_topics(message):
 
 
 def pass_test_handler(message, test_id):
+    def question_handler(message, index):
+        if index > 0:
+            answered_question = Test.questions[index-1]
+            
+            new_question = models.Question(answered_question.content, answered_question.type, answered_question.price, answered_question.id)
+            answer = list(filter(lambda answer: answer.content == message.text, answered_question.answers))[0]
+            new_answer = models.Answer(answer.content, answer.correctness)
+            
+            new_question.add_answer(new_answer)
+            test_answers.add_question(new_question)
+
+        
+        if question_amount <= index:
+            db.tests.add_test_answers(message.chat.id, test_answers)
+            correct_questions = list(filter(lambda question: question.answers[0].correctness == True, test_answers.questions))
+            score = sum([question.price for question in correct_questions])
+            cur_high_score = db.tests.get_highest_score(message.chat.id, test_id)
+            if cur_high_score:
+                score_dif = score-cur_high_score
+                if cur_high_score < score:
+                    db.tests.edit_highest_score(message.chat.id, test_id, score_dif)
+                    db.users.add_score(message.chat.id, score_dif)
+            else:
+                score_dif = score
+                db.tests.add_highest_score(message.chat.id, test_id, score_dif)
+                db.users.add_score(message.chat.id, score_dif)
+            
+            msg = msgs.get_test_ending(test_data["name"], len(correct_questions), len(test_answers.questions), score_dif)
+            bot.send_message(message.chat.id, f'Вы успешно прошли тест {test_data["name"]}!', reply_markup=markups.get_reply_keyboard('main', data=message.chat.id))
+            bot.send_message(message.chat.id, msg, reply_markup=markups.get_inline_keyboard('test_ending', data=test_id))
+            return
+        
+        current_question = Test.questions[index]
+        
+        if db.questions.is_answer_visibility(current_question.type):
+            reply_markup = markups.get_reply_keyboard('question_aswers', data=current_question.answers)
+        else:
+            reply_markup = markups.delete_markup()
+            
+        bot.send_message(message.chat.id, f'{current_question.content}', reply_markup=reply_markup)
+        
+        index += 1
+        bot.register_next_step_handler(message, question_handler, *[index])
+    
     test_data = db.tests.get_test(test_id)
-    Test = models.Test(test_data["name"])
+    Test = models.Test(test_data["name"], test_id)
     
     questions = db.questions.get_questions(test_id)
     for question in questions:
-        Question = models.Question(question["content"], question["type"], question["price"])
+        Question = models.Question(question["content"], question["type"], question["price"], question["id"])
         answers = db.answers.get_answers(question["id"])
         for answer in answers:
-            Answer = models.Answer(answer["content"], answer["correctness"])
+            Answer = models.Answer(answer["content"], answer["correctness"], answer['id'])
             Question.add_answer(Answer)
         Test.add_question(Question)
+        
+    test_answers = models.Test(test_data["name"], test_id)
+    question_amount = len(Test.questions)
     
+    question_handler(message, 0)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('student_topics_'))
@@ -83,6 +134,7 @@ def student_topics_callback_worker(call):
         msg = 'Произошла ошибка'
 
     bot.edit_message_text(chat_id=user_id, message_id=message_id, text=msg, reply_markup=markups.get_inline_keyboard('student_topic_next_step'))
+
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('student_topic_'))
 def student_topic_callback_worker(call):
@@ -106,7 +158,7 @@ def student_topic_callback_worker(call):
         msg = msgs.get_articles(topic_id)
         
         bot.edit_message_text(chat_id=user_id, message_id=message_id, text=msg, reply_markup=markups.get_inline_keyboard('student_view_articles', data=topic_id))
-    
+
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('student_tests_'))
 def student_tests_callback_worker(call):
@@ -125,12 +177,9 @@ def student_tests_callback_worker(call):
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('start_test_'))
-def student_start_test_callback_worker(call):
-    user_id = call.message.chat.id
-    
+def student_start_test_callback_worker(call):    
     test_id = '_'.join(call.data.split('_')[2:])
     pass_test_handler(call.message, test_id)
-        
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('student_acrticles_'))
@@ -147,6 +196,8 @@ def student_articles_callback_worker(call):
 
 
 # =====================================ADMIN=====================================
+
+
 def admin_mode(message):
     user_id = message.chat.id
     action = db.users.get_action(user_id)

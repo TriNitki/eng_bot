@@ -50,9 +50,9 @@ def get_selection(user_id):
     return None if selection == None else selection[0]
 
 def get_user(user_id):
-    cursor.execute(f"SELECT user_id, first_name, last_name, status, rating, student_group FROM users WHERE user_id = {user_id}")
+    cursor.execute(f"SELECT user_id, first_name, last_name, status, score, student_group FROM users WHERE user_id = {user_id}")
     temp = cursor.fetchone()
-    user = {"user_id": temp[0], "first_name": temp[1], "last_name": temp[2], "status": temp[3], "rating": temp[4], "student_group": temp[5]}
+    user = {"user_id": temp[0], "first_name": temp[1], "last_name": temp[2], "status": temp[3], "score": temp[4], "student_group": temp[5]}
     return user
 
 def set_first_name(user_id, f_name):
@@ -83,4 +83,8 @@ def set_selection(user_id, selection):
         cursor.execute(f"UPDATE users SET selection = NULL WHERE user_id = {user_id}")
     else:
         cursor.execute(f"UPDATE users SET selection = '{selection}' WHERE user_id = {user_id}")
+    conn.commit()
+
+def add_score(user_id, score):
+    cursor.execute(f"UPDATE users SET score = score + {score} WHERE user_id = {user_id}")
     conn.commit()

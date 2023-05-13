@@ -22,3 +22,12 @@ def get_questions(test_id):
                   "price": question[2], "type": question[3], 
                   "user_id": question[4]} for question in temp]
     return questions
+
+def is_answer_visibility(type_id):
+    cursor.execute(f"""
+                   SELECT answer_visibility
+                   FROM question_types
+                   WHERE type_id = {type_id}
+                   """)
+    answer_visibility = cursor.fetchone()[0]
+    return answer_visibility

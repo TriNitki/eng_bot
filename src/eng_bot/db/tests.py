@@ -1,4 +1,5 @@
 import psycopg2
+from datetime import datetime
 
 from config import dbname, user, password, host
 
@@ -49,3 +50,34 @@ def get_highest_score(user_id, test_id):
     
     highest_score = cursor.fetchone()
     return None if highest_score is None else highest_score[0]
+
+def add_highest_score(user_id, test_id, score):
+    cursor.execute(f"""
+                   INSERT INTO test_results(user_id, test_id, score)
+                   VALUES({user_id}, {test_id}, {score});
+                   """)
+    
+    conn.commit()
+
+def edit_highest_score(user_id, test_id, score_dif):
+    cursor.execute(f"""
+                   UPDATE test_results
+                   SET score = score + {score_dif}
+                   WHERE user_id = {user_id} AND test_id = {test_id};
+                   """)
+    
+    conn.commit()
+
+def add_test_answers(user_id, test_answers):
+    values = []
+    for question in test_answers.questions:
+        answer = question.answers[0]
+        values.append(f"('{answer.content}', {answer.correctness}, '{datetime.now()}', {question.id}, {user_id})")
+    
+    cursor.execute(f"""
+                   INSERT INTO test_answers(answer_content, correctness, date, question_id, user_id)
+                   VALUES{', '.join(values)};
+                   """)
+    
+    conn.commit()
+    

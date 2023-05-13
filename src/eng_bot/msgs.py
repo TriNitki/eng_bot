@@ -8,7 +8,7 @@ def greet_user(user):
 Фамилия: {user.last_name}
 Группа: {user.student_group}
 
-Ваш рейтинг: {user.rating}
+Ваш рейтинг: {user.score}
 '''
     return msg
 
@@ -76,3 +76,27 @@ def get_test_stats(user_id, test_id):
 
     msg += "Вы ранее не проходили этот тест!" if highest_score is None else f"Ваш лучший результат: {highest_score}/{questions_price}"
     return msg
+
+def get_test_ending(test_name, correct_answers, total_answers, score_dif):
+    msg = f"Ваш результат: {correct_answers}/{total_answers}.\n"
+    
+    if correct_answers == total_answers:
+        msg += "Поздравляю, Вы набрали максимальный балл!\n"
+        if score_dif <= 0:
+            return msg
+    
+    if score_dif > 0:
+        msg += f"Вы получили {score_dif} {year_type(score_dif)}.\n"
+    else:
+        msg += "Вы набрали недостаточно баллов для награды 😢\n"
+    
+    return msg
+
+def year_type(age):
+    if age % 10 in [2, 3, 4]:
+        return 'балла'
+    elif age % 10 != 1 or age % 100 == 11:
+        return 'баллов'
+    else:
+        return 'балл'
+ 

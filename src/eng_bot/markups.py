@@ -72,6 +72,9 @@ def get_reply_keyboard(type, data=None, one_time=False):
                 temp_list = []
         
         markup.add(*temp_list)
+    elif type == 'question_aswers':
+        answers_content = [answer.content for answer in data]
+        markup.add(*answers_content)
         
     
     return markup
@@ -192,6 +195,14 @@ def get_inline_keyboard(type, data=None):
         test_start = types.InlineKeyboardButton(text='Начать тестирование!', callback_data=f'start_test_{data}')
         test_back = types.InlineKeyboardButton(text='Вернуться', callback_data='student_topic_view_tests')
         markup.add(test_start, test_back)
+    
+    elif type == 'test_ending':
+        test_id = data
+        show_answers = types.InlineKeyboardButton(text='Показать ответы', callback_data=f'show_answers_{test_id}')
+        test_again = types.InlineKeyboardButton(text='Пройти еще раз', callback_data=f'student_tests_{test_id}')
+        test_back = types.InlineKeyboardButton(text='Вернуться', callback_data='student_topic_view_tests')
+        markup.add(show_answers, test_again)
+        markup.add(test_back)
 
     return markup
         
