@@ -11,6 +11,18 @@ def get_question_types():
     question_types = [{"id": type_id, "name": name} for type_id, name in cursor.fetchall()]
     return question_types
 
+def get_content(question_id):
+    cursor.execute(f"SELECT content FROM questions WHERE question_id = {question_id}")
+    
+    question_name = cursor.fetchone()[0]
+    return question_name
+
+def get_test_id(question_id):
+    cursor.execute(f"SELECT test_id FROM questions WHERE question_id = {question_id}")
+    
+    test_id = cursor.fetchone()[0]
+    return test_id
+
 def get_questions(test_id):
     cursor.execute(f"""
                    SELECT question_id, content, price, type, user_id

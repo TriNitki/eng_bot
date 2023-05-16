@@ -52,15 +52,18 @@ def get_articles(topic_id):
     msg += '\n'.join([f"{idx+1}  →  {article['name']}" for idx, article in enumerate(articles)])
     return msg
 
-
 def admin_msg_handler(message):
     user_id = message.chat.id
     if message.text.startswith('В главное меню'):
         db.users.set_action(user_id, 'back_to_main')
     elif message.text.startswith('Топики'):
         db.users.set_action(user_id, 'edit_topic')
+    elif message.text.startswith('Создать топик'):
+        db.users.set_action(user_id, 'add_topic')
+    elif message.text.startswith('Удалить топик'):
+        db.users.set_action(user_id, 'del_topic')
         
-def get_test_stats(user_id, test_id):
+def get_test_info(user_id, test_id):
     test = db.tests.get_test(test_id)
     test_by = db.users.get_user(test["user_id"])
     
@@ -69,7 +72,7 @@ def get_test_stats(user_id, test_id):
     questions_amount = len(questions)
     questions_price = sum([question["price"] for question in questions])
     
-    msg = f"{test['name']}:\n"
+    msg = f"Тест: {test['name']}:\n"
     msg += "Создатель теста: Аноним\n\n" if test_by["last_name"] is None or test_by["first_name"] is None \
                                 else f"Создатель теста: {test_by['last_name']} {test_by['first_name']}\n\n"
     msg += f"Количество вопросов: {questions_amount}\n"
@@ -77,7 +80,32 @@ def get_test_stats(user_id, test_id):
     msg += "Вы ранее не проходили этот тест!" if highest_score is None else f"Ваш лучший результат: {highest_score}/{questions_price}"
     return msg
 
-def get_test_ending(test_name, correct_answers, total_answers, score_dif):
+def get_test_results(answers):
+    msg = 'Ваши ответы:\n'
+    for idx, answer in enumerate(answers):
+        q_content = db.questions.get_content(answer['question_id'])
+        msg += f'{idx+1}. {q_content}\n     ►  {answer["answer_content"]}  '
+        if answer["correctness"]:
+            msg += '✅\n'
+        else:
+            msg += '❌\n'
+        
+    return msg
+        
+        
+
+def get_article_info(article_id):
+    article = db.articles.get_article(article_id)
+    article_by = db.users.get_user(article["user_id"])
+    
+    msg = f"Статья: {article['name']}\n"
+    msg += "Создатель теста: Аноним\n\n" if article_by["last_name"] is None or article_by["first_name"] is None \
+                                else f"Создатель теста: {article_by['last_name']} {article_by['first_name']}\n\n"
+    
+    msg += f"Описание: {article['description']}" if article['description'] else "Описание к данной статье отсутствует."
+    return msg
+    
+def get_test_ending(correct_answers, total_answers, score_dif):
     msg = f"Ваш результат: {correct_answers}/{total_answers}.\n"
     
     if correct_answers == total_answers:

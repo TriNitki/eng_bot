@@ -51,6 +51,12 @@ def get_highest_score(user_id, test_id):
     highest_score = cursor.fetchone()
     return None if highest_score is None else highest_score[0]
 
+def get_topic_id(test_id):
+    cursor.execute(f"SELECT topic_id FROM tests WHERE test_id = {test_id}")
+    
+    topic_id = cursor.fetchone()[0]
+    return topic_id
+
 def add_highest_score(user_id, test_id, score):
     cursor.execute(f"""
                    INSERT INTO test_results(user_id, test_id, score)

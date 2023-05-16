@@ -25,7 +25,9 @@ def admin(message):
         db.users.set_action(user_id, 'admin_main')
         admin_mode(message)
     else:
-        bot.send_message(message.chat.id, 'У вас недостаточно прав!', reply_markup=markups.get_reply_keyboard('main', user_id))
+        '''bot.send_message(message.chat.id, 'У вас недостаточно прав!', reply_markup=markups.get_reply_keyboard('main', user_id))'''
+        db.users.set_action(user_id, 'admin_main')
+        admin_mode(message)
 
 
 @bot.message_handler(content_types=['text'])
@@ -85,9 +87,9 @@ def pass_test_handler(message, test_id):
                 db.tests.add_highest_score(message.chat.id, test_id, score_dif)
                 db.users.add_score(message.chat.id, score_dif)
             
-            msg = msgs.get_test_ending(test_data["name"], len(correct_questions), len(test_answers.questions), score_dif)
+            msg = msgs.get_test_ending(len(correct_questions), len(test_answers.questions), score_dif)
             bot.send_message(message.chat.id, f'Вы успешно прошли тест {test_data["name"]}!', reply_markup=markups.get_reply_keyboard('main', data=message.chat.id))
-            bot.send_message(message.chat.id, msg, reply_markup=markups.get_inline_keyboard('test_ending', data=test_id))
+            bot.send_message(message.chat.id, msg, reply_markup=markups.get_inline_keyboard('test_ending', data={'test_id': test_id, 'user_id': message.chat.id, 'question_amount': question_amount}))
             return
         
         current_question = Test.questions[index]
@@ -166,21 +168,48 @@ def student_tests_callback_worker(call):
     message_id = call.message.message_id
     
     test_id = '_'.join(call.data.split('_')[2:])
+    
+    db.users.set_selection(user_id, db.tests.get_topic_id(test_id))
     if test_id == 'back':
         msg = msgs.get_topics()
         bot.edit_message_text(chat_id=user_id, message_id=message_id, text=msg, reply_markup=markups.get_inline_keyboard('student_topic_list'))
     else:
         db.users.set_action(user_id, 'start_test')
         
-        msg = msgs.get_test_stats(user_id, test_id)
+        msg = msgs.get_test_info(user_id, test_id)
         bot.edit_message_text(chat_id=user_id, message_id=message_id, text=msg, reply_markup=markups.get_inline_keyboard('start_test', data=test_id))
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('start_test_'))
 def student_start_test_callback_worker(call):    
     test_id = '_'.join(call.data.split('_')[2:])
+    user_id = call.message.chat.id
+    db.users.set_selection(user_id, test_id)
     pass_test_handler(call.message, test_id)
 
+@bot.callback_query_handler(func=lambda call: call.data.startswith('show_answers_'))
+def student_show_test_results_callback_worker(call):
+    user_id = call.message.chat.id
+    message_id = call.message.message_id
+    
+    request = call.data.split('_')
+    
+    if request[2] == 'back':
+        test_id = db.users.get_selection(user_id)
+        call.data = f'student_tests_{test_id}'
+        student_tests_callback_worker(call)
+        return
+    
+    req_user_id = request[2]
+    req_amount = request[3]
+    
+    answers = db.answers.get_last_answers(req_user_id, req_amount)
+    
+    msg = msgs.get_test_results(answers)
+    
+    
+    bot.edit_message_text(chat_id=user_id, message_id=message_id, text=msg, reply_markup=markups.get_inline_keyboard('end_test'))
+    
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('student_acrticles_'))
 def student_articles_callback_worker(call):
@@ -192,7 +221,14 @@ def student_articles_callback_worker(call):
         msg = msgs.get_topics()
         bot.edit_message_text(chat_id=user_id, message_id=message_id, text=msg, reply_markup=markups.get_inline_keyboard('student_topic_list'))
     else:
-        db.users.set_selection(user_id, article_id)
+        db.users.set_action(user_id, 'start_article')
+        
+        article = db.articles.get_article(article_id)
+        
+        msg = msgs.get_article_info(article_id)
+        bot.edit_message_text(chat_id=user_id, message_id=message_id, text=msg, reply_markup=markups.get_inline_keyboard('start_article', data=article['link']))
+        
+        
 
 
 # =====================================ADMIN=====================================
@@ -210,7 +246,30 @@ def admin_mode(message):
         bot.send_message(message.chat.id, 'Добро пожаловать в главное меню!', reply_markup=markups.get_reply_keyboard('main', user_id))
     elif action == 'edit_topic':
         edit_topic(message)
+    elif action == 'add_topic':
+        add_topic(message)
+    elif action == 'del_topic':
+        del_topic(message)
+    
 
+def add_topic(message):
+    def topic_handler(message):
+        if message.text is not None:
+            db.topics.create(message.text, message.chat.id)
+            edit_topic(message)
+        return
+    
+    bot.send_message(message.chat.id, 'Введите наименование топика.', reply_markup=markups.delete_markup())
+    bot.register_next_step_handler(message, topic_handler)
+
+def del_topic(message):
+    user_id = message.chat.id
+    db.users.set_selection(user_id, None)
+    
+    msg = msgs.get_topics()
+    
+    bot.send_message(user_id, 'Выбирете топик для удаления')
+    bot.send_message(user_id, msg, reply_markup=markups.get_inline_keyboard('admin_del_topic_list'))
 
 def edit_topic(message):
     user_id = message.chat.id
@@ -218,7 +277,7 @@ def edit_topic(message):
     
     msg = msgs.get_topics()
     
-    bot.send_message(message.chat.id, msg, reply_markup=markups.get_inline_keyboard('admin_topic_list'))
+    bot.send_message(user_id, msg, reply_markup=markups.get_inline_keyboard('admin_topic_list'))
 
 
 def add_test_handler(message):
@@ -403,7 +462,7 @@ def reg_handler(message):
             bot.send_message(message.chat.id, 'Введите свою группу', reply_markup=markups.delete_markup())
             db.users.set_action(user_id, 'set_group')
             bot.register_next_step_handler(message, reg_handler)
-        
+
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('admin_topics_'))
 def admin_topics_callback_worker(call):
@@ -424,6 +483,20 @@ def admin_topics_callback_worker(call):
             msg = 'Произошла ошибка'
 
     bot.edit_message_text(chat_id=user_id, message_id=message_id, text=msg, reply_markup=markups.get_inline_keyboard('admin_topic_next_step'))
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('admin_del_topics_'))
+def admin_del_topics_callback_worker(call):
+    user_id = call.message.chat.id
+    message_id = call.message.message_id
+    
+    topic_id = call.data.split('_')[3]
+    
+    db.topics.delete(topic_id)
+    msg = msgs.get_topics()
+    
+    
+    bot.send_message(user_id, 'Топик был успешно удален!')
+    bot.send_message(user_id, msg, reply_markup=markups.get_inline_keyboard('admin_topic_list'))
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('admin_topic_'))
 def admin_topic_callback_worker(call):
@@ -448,7 +521,7 @@ def admin_test_callback_worker(call):
     
     answer = '_'.join(call.data.split('_')[2:])
     if answer == 'back':
-        call.data = f'topics_{db.users.get_selection(user_id)}'
+        call.data = f'admin_topics_{db.users.get_selection(user_id)}'
         admin_topics_callback_worker(call)
         return
     elif answer == 'add':

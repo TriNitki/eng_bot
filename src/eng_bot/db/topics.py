@@ -15,6 +15,10 @@ def create(topic_name, user_id):
     topic_id = get_id(topic_name, user_id)
     db.users.set_selection(user_id, topic_id)
 
+def delete(topic_id):
+    cursor.execute(f"DELETE FROM topics WHERE topic_id = {topic_id}")
+    conn.commit()
+
 def get_name(topic_id):
     cursor.execute(f"SELECT name FROM topics WHERE topic_id = {topic_id}")
     topic_name = cursor.fetchone()[0]
