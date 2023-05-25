@@ -26,7 +26,7 @@ def add(user_id, topic_id, test):
     test_id = cursor.fetchone()[0]
     for question in test.questions:
         cursor.execute(f"""
-                       INSERT INTO questions(content, price, test_id, type, user_id) 
+                       INSERT INTO questions(content, price, test_id, type_id, user_id) 
                        VALUES('{question.content}', {question.price}, {test_id}, '{question.type}', {user_id})
                        """)
         conn.commit()

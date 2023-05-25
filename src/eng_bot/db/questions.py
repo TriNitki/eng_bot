@@ -25,13 +25,13 @@ def get_test_id(question_id):
 
 def get_questions(test_id):
     cursor.execute(f"""
-                   SELECT question_id, content, price, type, user_id
+                   SELECT question_id, content, price, type_id, user_id
                    FROM questions
                    WHERE test_id = {test_id};
                    """)
     temp = cursor.fetchall()
     questions = [{"id": question[0], "content": question[1], 
-                  "price": question[2], "type": question[3], 
+                  "price": question[2], "type_id": question[3], 
                   "user_id": question[4]} for question in temp]
     return questions
 

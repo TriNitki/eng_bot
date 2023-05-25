@@ -7,3 +7,4 @@ test.py
 .handler-saves/
 __pycache__/
 data.json
+*.code-workspace

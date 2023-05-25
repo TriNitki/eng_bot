@@ -4,40 +4,36 @@ import db.users, db.topics, db.tests, db.articles, db.questions
 def get_reply_keyboard(type, data=None, one_time=False):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=one_time)
     
-    profile = types.KeyboardButton('Профиль')
-    topics = types.KeyboardButton('Топики')
-    leader_board = types.KeyboardButton('Таблица лидеров')
+    profile = types.KeyboardButton('Профиль 📷')
+    topics = types.KeyboardButton('Топики 📚')
+    leader_board = types.KeyboardButton('Таблица лидеров 🏆')
+
+    register = types.KeyboardButton('Регистрация ✍️')
     
-    articles = types.KeyboardButton('Статьи')
-    tests = types.KeyboardButton('Тесты')
+    what = types.KeyboardButton('Что я такое? 🤔')
+    skip = types.KeyboardButton('Пропустить ➡️')
     
-    register = types.KeyboardButton('Регистрация')
+    getit = types.KeyboardButton('Понятно! 💡')
     
-    what = types.KeyboardButton('Что я такое?')
-    skip = types.KeyboardButton('Пропустить')
+    back_to_main = types.KeyboardButton('В главное меню 🏠')
     
-    getit = types.KeyboardButton('Понятно!')
+    edit_test = types.KeyboardButton('Редактировать тесты ✏️')
+    edit_article = types.KeyboardButton('Редактировать статьи ✏️')
     
-    topics = types.KeyboardButton('Топики')
-    back_to_main = types.KeyboardButton('В главное меню')
+    back = types.KeyboardButton('Вернуться ⬅️')
     
-    edit_test = types.KeyboardButton('Редактировать тесты')
-    edit_article = types.KeyboardButton('Редактировать статьи')
+    it_is_true = types.KeyboardButton('Верно 👍')
+    it_is_false = types.KeyboardButton('Не верно 👎')
     
-    back = types.KeyboardButton('Вернуться')
+    new_test = types.KeyboardButton('Добавить тест ➕')
+    new_question = types.KeyboardButton('Добавить вопрос ➕')
+    new_answer = types.KeyboardButton('Добавить ответ ➕')
     
-    it_is_true = types.KeyboardButton('Верно')
-    it_is_false = types.KeyboardButton('Не верно')
+    new_article = types.KeyboardButton('Добавить статью ➕')
     
-    new_test = types.KeyboardButton('Добавить тест')
-    new_question = types.KeyboardButton('Добавить вопрос')
-    new_answer = types.KeyboardButton('Добавить ответ')
+    create_topic = types.KeyboardButton('Создать топик ➕')
     
-    new_article = types.KeyboardButton('Добавить статью')
-    
-    create_topic = types.KeyboardButton('Создать топик')
-    
-    delete_topic = types.KeyboardButton('Удалить топик')
+    delete_topic = types.KeyboardButton('Удалить топик ➖')
     
     if type == 'main':
         if db.users.check_registration(data):
@@ -85,7 +81,10 @@ def get_reply_keyboard(type, data=None, one_time=False):
 def get_inline_keyboard(type, data=None):
     markup = types.InlineKeyboardMarkup()
     
-    if type == 'admin_topic_list':
+    if type == 'student_edit_user':
+        edit_user = types.InlineKeyboardButton(text='Редактировать ', callback_data='student_edit_user')
+        markup.add(edit_user)
+    elif type == 'admin_topic_list':
         temp_list = []
         data = db.topics.get_all_topics()
         for idx, topic in enumerate(data):
@@ -101,7 +100,7 @@ def get_inline_keyboard(type, data=None):
         
         markup.add(*temp_list)
         
-        topics_back = types.InlineKeyboardButton(text='Вернуться', callback_data='admin_topics_back')
+        topics_back = types.InlineKeyboardButton(text='Вернуться ⬅️', callback_data='admin_topics_back')
         markup.add(topics_back)
     
     elif type == 'admin_del_topic_list':
@@ -120,32 +119,32 @@ def get_inline_keyboard(type, data=None):
         
         markup.add(*temp_list)
         
-        topics_back = types.InlineKeyboardButton(text='Вернуться (без удаления)', callback_data='admin_topics_back')
+        topics_back = types.InlineKeyboardButton(text='Вернуться ⬅️', callback_data='admin_topics_back')
         markup.add(topics_back)
         
     elif type == 'admin_topic_next_step':
-        topic_back = types.InlineKeyboardButton(text='Вернуться', callback_data='admin_topic_back')
-        topic_edit_tests = types.InlineKeyboardButton(text='Изменить тесты', callback_data='admin_topic_edit_tests')
-        topic_edit_articles = types.InlineKeyboardButton(text='Изменить статьи', callback_data='admin_topic_edit_articles')
+        topic_back = types.InlineKeyboardButton(text='Вернуться ⬅️', callback_data='admin_topic_back')
+        topic_edit_tests = types.InlineKeyboardButton(text='Изменить тесты 📝', callback_data='admin_topic_edit_tests')
+        topic_edit_articles = types.InlineKeyboardButton(text='Изменить статьи 📝', callback_data='admin_topic_edit_articles')
         
         markup.add(topic_edit_tests, topic_edit_articles)
         markup.add(topic_back)
     
     elif type == 'admin_edit_test':
-        test_add = types.InlineKeyboardButton(text='Добавить тест', callback_data='admin_test_add')
-        test_edit = types.InlineKeyboardButton(text='Редактировать тест', callback_data='admin_test_edit')
-        test_delete = types.InlineKeyboardButton(text='Удалить тест', callback_data='admin_test_delete')
-        test_back = types.InlineKeyboardButton(text='Вернуться', callback_data='admin_test_back')
+        test_add = types.InlineKeyboardButton(text='Добавить тест ➕', callback_data='admin_test_add')
+        test_edit = types.InlineKeyboardButton(text='Редактировать тест ✏️', callback_data='admin_test_edit')
+        test_delete = types.InlineKeyboardButton(text='Удалить тест ➖', callback_data='admin_test_delete')
+        test_back = types.InlineKeyboardButton(text='Вернуться ⬅️', callback_data='admin_test_back')
         
         markup.add(test_add)
         markup.add(test_edit, test_delete)
         markup.add(test_back)
     
     elif type == 'admin_edit_article':
-        art_add = types.InlineKeyboardButton(text='Добавить статью', callback_data='admin_article_add')
-        art_edit = types.InlineKeyboardButton(text='Редактировать статью', callback_data='admin_article_edit')
-        art_delete = types.InlineKeyboardButton(text='Удалить статью', callback_data='admin_article_delete')
-        art_back = types.InlineKeyboardButton(text='Вернуться', callback_data='admin_article_back')
+        art_add = types.InlineKeyboardButton(text='Добавить статью ➕', callback_data='admin_article_add')
+        art_edit = types.InlineKeyboardButton(text='Редактировать статью ✏️', callback_data='admin_article_edit')
+        art_delete = types.InlineKeyboardButton(text='Удалить статью ➖', callback_data='admin_article_delete')
+        art_back = types.InlineKeyboardButton(text='Вернуться ⬅️', callback_data='admin_article_back')
         
         markup.add(art_add)
         markup.add(art_edit, art_delete)
@@ -168,9 +167,9 @@ def get_inline_keyboard(type, data=None):
         markup.add(*temp_list)
     
     elif type == 'student_topic_next_step':
-        topic_back = types.InlineKeyboardButton(text='Вернуться', callback_data='student_topic_back')
-        topic_edit_tests = types.InlineKeyboardButton(text='Пройти тест', callback_data='student_topic_view_tests')
-        topic_edit_articles = types.InlineKeyboardButton(text='Посмотреть статью', callback_data='student_topic_view_articles')
+        topic_back = types.InlineKeyboardButton(text='Вернуться ⬅️', callback_data='student_topic_back')
+        topic_edit_tests = types.InlineKeyboardButton(text='Пройти тест 🧠', callback_data='student_topic_view_tests')
+        topic_edit_articles = types.InlineKeyboardButton(text='Посмотреть статью 📖', callback_data='student_topic_view_articles')
         
         markup.add(topic_edit_tests, topic_edit_articles)
         markup.add(topic_back)
@@ -191,7 +190,7 @@ def get_inline_keyboard(type, data=None):
                 temp_list = []
         markup.add(*temp_list)
         
-        student_tests_back = types.InlineKeyboardButton(text='Вернуться', callback_data=f'student_topics_{topic_id}')
+        student_tests_back = types.InlineKeyboardButton(text='Вернуться ⬅️', callback_data=f'student_topics_{topic_id}')
         markup.add(student_tests_back)
     
     elif type == 'student_view_articles':
@@ -210,37 +209,40 @@ def get_inline_keyboard(type, data=None):
                 temp_list = []
         markup.add(*temp_list)
         
-        student_articles_back = types.InlineKeyboardButton(text='Вернуться', callback_data=f'student_topics_{topic_id}')
+        student_articles_back = types.InlineKeyboardButton(text='Вернуться ⬅️', callback_data=f'student_topics_{topic_id}')
         markup.add(student_articles_back)
     
     elif type == 'start_test':
-        test_start = types.InlineKeyboardButton(text='Начать тестирование!', callback_data=f'start_test_{data}')
-        test_back = types.InlineKeyboardButton(text='Вернуться', callback_data='student_topic_view_tests')
-        markup.add(test_start, test_back)
+        test_id = data
+        test_start = types.InlineKeyboardButton(text='Начать тестирование! 🏁', callback_data=f'start_test_{test_id}')
+        test_back = types.InlineKeyboardButton(text='Вернуться ⬅️', callback_data='student_topic_view_tests')
+        if len(db.questions.get_questions(test_id)) > 0:
+            markup.add(test_start, test_back)
+        else:
+            markup.add(test_back)
+        
     
     elif type == 'test_ending':
         test_result = data
-        show_answers = types.InlineKeyboardButton(text='Показать ответы', callback_data=f'show_answers_{test_result["user_id"]}_{test_result["question_amount"]}')
-        test_again = types.InlineKeyboardButton(text='Пройти еще раз', callback_data=f'student_tests_{test_result["test_id"]}')
-        test_back = types.InlineKeyboardButton(text='Вернуться', callback_data='student_topic_view_tests')
+        show_answers = types.InlineKeyboardButton(text='Показать ответы 👁️', callback_data=f'show_answers_{test_result["user_id"]}_{test_result["question_amount"]}')
+        test_again = types.InlineKeyboardButton(text='Пройти еще раз 🔄', callback_data=f'student_tests_{test_result["test_id"]}')
+        test_back = types.InlineKeyboardButton(text='Вернуться ⬅️', callback_data='student_topic_view_tests')
         markup.add(show_answers, test_again)
         markup.add(test_back)
     
     elif type == 'end_test':
-        end_test = types.InlineKeyboardButton(text='Закончить тестирование', callback_data='show_answers_back')
+        end_test = types.InlineKeyboardButton(text='Закончить тестирование 🛑', callback_data='show_answers_back')
         
         markup.add(end_test)
     
     elif type == 'start_article':
         link = data
-        view_article = types.InlineKeyboardButton(text='Читать статью', url=link, callback_data=f'start_test_{data}')
-        article_back = types.InlineKeyboardButton(text='Вернуться', callback_data='student_topic_view_articles')
+        view_article = types.InlineKeyboardButton(text='Читать статью 📖', url=link, callback_data=f'start_test_{data}')
+        article_back = types.InlineKeyboardButton(text='Вернуться ⬅️', callback_data='student_topic_view_articles')
         markup.add(view_article, article_back)
 
     return markup
         
-        
-
 def delete_markup():
     markup = types.ReplyKeyboardRemove()
     return markup

@@ -56,15 +56,24 @@ def get_user(user_id):
     return user
 
 def set_first_name(user_id, f_name):
-    cursor.execute(f"UPDATE users SET first_name = '{f_name}' WHERE user_id = {user_id}")
+    if f_name is None:
+        cursor.execute(f"UPDATE users SET first_name = NULL WHERE user_id = {user_id}")
+    else:
+        cursor.execute(f"UPDATE users SET first_name = '{f_name}' WHERE user_id = {user_id}")
     conn.commit()
 
 def set_last_name(user_id, l_name):
-    cursor.execute(f"UPDATE users SET last_name = '{l_name}' WHERE user_id = {user_id}")
+    if l_name is None:
+        cursor.execute(f"UPDATE users SET last_name = NULL WHERE user_id = {user_id}")
+    else:
+        cursor.execute(f"UPDATE users SET last_name = '{l_name}' WHERE user_id = {user_id}")
     conn.commit()
     
 def set_group(user_id, group):
-    cursor.execute(f"UPDATE users SET student_group = '{group}' WHERE user_id = {user_id}")
+    if group is None:
+        cursor.execute(f"UPDATE users SET student_group = NULL WHERE user_id = {user_id}")
+    else:
+        cursor.execute(f"UPDATE users SET student_group = '{group}' WHERE user_id = {user_id}")
     conn.commit()
 
 def set_registration(user_id, status):
@@ -88,3 +97,14 @@ def set_selection(user_id, selection):
 def add_score(user_id, score):
     cursor.execute(f"UPDATE users SET score = score + {score} WHERE user_id = {user_id}")
     conn.commit()
+
+def get_leader_board_data():
+    cursor.execute(f"""
+                   SELECT user_id, first_name, last_name, is_registered, score 
+                   FROM users 
+                   ORDER BY score DESC 
+                   LIMIT 10;""")
+    
+    temp = cursor.fetchall()
+    users = [{'user_id': user[0], 'first_name': user[1], 'last_name': user[2], 'is_registered': user[3], 'score': user[4]} for user in temp]
+    return users
